@@ -78,43 +78,17 @@ class Heap:
             # Zet de root gelijk aan het newItem
             self.root = newHeapItem
             # Verhoog de size van de heap
-            self.size += 1
+            self.size = 1
             return True
+        last_node = self.getLastNode()
+        if last_node.left is None:
+            last_node.left = newHeapItem
         else:
-            # Indien de heap niet leeg is dan slagen we de root op in een variable current
-            current = self.root
-            # Maak een loop dat stopt bij break
-            while True:
-                # Als er geen linker kind is
-                if not current.left:
-                    # Zet het linker kind gelijk aan newItem
-                    current.left = newHeapItem
-                    # Update de parent
-                    newHeapItem.parent = current
-                    break
-                # Als er geen rechter kind is
-                elif not current.right:
-                    # Zet het rechter kind gelijk aan newItem
-                    current.right = newHeapItem
-                    # Update de parent
-                    newHeapItem.parent = current
-                    break
-                # Implementatie voor max heap
-                elif self.maxHeap == True and current.left.key < current.right.key:
-                    # Schuif de current op naar linker kind
-                    current = current.left
-                # Implementatie voor min heap
-                elif self.maxHeap == False and current.left.key > current.right.key:
-                    # Schuif de current op naar linker kind
-                    current = current.left
-                else:
-                    # Schuif de current op naar rechter kind
-                    current = current.right
-            # Voeg een trickleDown uit van het niewe heapItem
-            self.trickleUp(newHeapItem)
-            # Increment de size
-            self.size += 1
-            return True
+            last_node.right = newHeapItem
+        newHeapItem.parent = last_node
+        self.size += 1
+        self.trickleUp(newHeapItem)
+        return True
 
     def heapDelete(self):
         """
@@ -150,7 +124,7 @@ class Heap:
                         # Maak linker kind leeg
                         parent.left = None
                     # Kijkt of de laatste knoop in het recter kind zit
-                    else:
+                    elif parent.right == last_node:
                         # Maak linker kind leeg
                         parent.right = None
                 # Als er niet aan de bovenstaande condities wordt voldaan doen we een trickleDown
@@ -166,7 +140,7 @@ class Heap:
         """
         -------------------------------------------------------
         Beschrijving:
-            Deze methode stelt een BST voor als een dict.
+            Deze methode stelt een heap voor als een dict.
         -------------------------------------------------------
         Preconditite:
             De heap mag niet leeg zijn
@@ -201,7 +175,8 @@ class Heap:
         Preconditite:
             /
         Postconditions:
-            De dict. wordt ingeladen als een BST, met voor elke heapItem de key gelijk aan de val
+            De dict. wordt ingeladen als een heap, met voor elke heapItem
+            de key gelijk aan de val van de 'root' key
         -------------------------------------------------------
         """
         def load_bst(dict):
@@ -236,30 +211,49 @@ class Heap:
     def trickleUp(self, node):
         # Implementatie voor max-heap
         if self.maxHeap == True:
-            while node.parent and node.key > node.parent.key:
-                node.key, node.parent.key = node.parent.key, node.key
-                node = node.parent
+            parent = node.parent
+            if parent is None:
+                return
+            if node.key > parent.key:
+                node.key, parent.key = parent.key, node.key
+                self.trickleUp(parent)
         # Implementatie voor min-heap
         else:
-            while node.parent and node.key < node.parent.key:
-                node.key, node.parent.key = node.parent.key, node.key
-                node = node.parent
+            parent = node.parent
+            if parent is None:
+                return
+            if node.key > parent.key:
+                node.key, parent.key = parent.key, node.key
+                self.trickleUp(parent)
 
     def trickleDown(self, node):
         # Implementatie voor max-heap
         if self.maxHeap == True:
-            max_child = self.getMaxChild(node)
-            while max_child and node.key < max_child.key:
-                node.key, max_child.key = max_child.key, node.key
-                node = max_child
-                max_child = self.getMaxChild(node)
+            # Get the left and right children of the node
+            leftChild = node.left
+            rightChild = node.right
+            # Find the largest among node, left child and right child
+            largest = node
+            if leftChild is not None and leftChild.key > largest.key:
+                largest = leftChild
+            if rightChild is not None and rightChild.key > largest.key:
+                largest = rightChild
+            # If node is not the largest, swap the node with the largest and recursively trickle down the largest node
+            if largest != node:
+                node.key, largest.key = largest.key, node.key
+                self.trickleDown(largest)
         # Implementatie voor min-heap
         else:
-            min_child = self.getMinChild(node)
-            while min_child and node.key > min_child.key:
-                node.key, min_child.key = min_child.key, node.key
-                node = min_child
-                min_child = self.getMinChild(node)
+            left_child = node.left
+            right_child = node.right
+            if left_child is None:
+                return
+            smallest_child = left_child
+            if right_child is not None and right_child.key < left_child.key:
+                smallest_child = right_child
+            if smallest_child.key < node.key:
+                node.key, smallest_child.key = smallest_child.key, node.key
+                self.trickleDown(smallest_child)
 
     def getMaxChild(self, node):
         if not node.left:
@@ -278,12 +272,12 @@ class Heap:
             return node.left if node.left.key < node.right.key else node.right
 
     def getLastNode(self):
-        current = self.root
-        while current.left:
-            current = current.left
-        while current.right:
-            current = current.right
-        return current
+        if self.root is None:
+            return None
+        node = self.root
+        while node.right is not None:
+            node = node.right
+        return node
 
 
 
