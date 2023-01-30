@@ -52,7 +52,7 @@ def createTreeItem(key,val):
     return treeItem(key, val)
 
 class TwoThreeFourTree:
-    def __init__(self):
+    def __init__(self, order=3):
         """
         -------------------------------------------------------
         Beschrijving:
@@ -65,6 +65,7 @@ class TwoThreeFourTree:
         -------------------------------------------------------
         """
         self.root = None
+        self.order = order
 
     def isEmpty(self):
         """
@@ -83,7 +84,7 @@ class TwoThreeFourTree:
         else:
             return False
 
-    def search(self, searchKey):
+    def searchTreeItem(self, treeItem, searchKey):
         """
         -------------------------------------------------------
         Beschrijving:
@@ -95,76 +96,68 @@ class TwoThreeFourTree:
             De knoop wodt teruggeven
         -------------------------------------------------------
         """
-        node = self.root
-        while node is not None:
-            # Check if the key is in the node
-            if searchKey in node.keys:
-                return node
-            # Check if there are children and choose the correct path
-            elif node.children:
-                if searchKey < node.keys[0]:
-                    node = node.children[0]
-                elif len(node.keys) == 2 and searchKey > node.keys[1]:
-                    node = node.children[2]
-                elif searchKey > node.keys[0] and searchKey < node.keys[1]:
-                    node = node.children[1]
-                else:
-                    return None
-            else:
-                return None
+        if treeItem.isLeaf():
+            return treeItem
+
+        for i, k in enumerate(treeItem.keys):
+            if searchKey < k:
+                return self.searchTreeItem(treeItem.children[i], searchKey)
+
+        return self.searchTreeItem(treeItem.children[-1], searchKey)
+
+    def searchParent(selfself, treeItem, child):
+        if treeItem.is_leaf():
+            return None
+
+        if child in treeItem.children:
+            return treeItem
+
+        for c in treeItem.children:
+            parent = treeItem.searchParent(c, child)
+            if parent:
+                return parent
+
         return None
 
     def insertItem(self, newItem):
-        new_key = newItem.keys
-        if not self.root:
-            self.root = treeItem([newItem.keys], [newItem.vals])
-            return
-
-        current_node = self.root
-        while not current_node.isLeaf:
-            for i in range(len(current_node.keys)):
-                if new_key < current_node.keys[i]:
-                    current_node = current_node.children[i]
-                    break
-                elif i == len(current_node.keys) - 1:
-                    current_node = current_node.children[-1]
-
-        index = 0
-        while index < len(current_node.keys) and new_key > current_node.keys[index]:
-            index += 1
-        current_node.keys.insert(index, new_key)
-        current_node.vals.insert(index, newItem.vals)
-
-        if len(current_node.keys) > 3:
-            self.split_node(current_node)
-
-    def split_node(self, node):
+        key = newItem.keys
+        node = self.searchTreeItem(self.root, key)
+        node.keys.append(key)
+        node.keys.sort()
+        if len(node.keys) > 3:
+            self.split(node)
+    def split(self, node):
         # Kijkt eerst of de lengte even of oneven is - Als er twee si- blings een item kunnen uitlenen, kies je voor de linkse.
         if (len(node.keys) % 2 == 0):
-            middle_index = (len(node.keys) // 2)-1
+            m = (len(node.keys) // 2) - 1
         else:
-            middle_index = len(node.keys) // 2
-        middle_key = node.keys[middle_index]
-        middle_val = node.vals[middle_index]
-        left_keys = node.keys[:middle_index]
-        left_vals = node.vals[:middle_index]
-        right_keys = node.keys[middle_index + 1:]
-        right_vals = node.vals[middle_index + 1:]
-        left_node = treeItem(left_keys, left_vals)
-        right_node = treeItem(right_keys, right_vals)
+            m = len(node.keys) // 2
+        left_keys = node.keys[:m]
+        right_keys = node.keys[m:]
+
+        if node.is_leaf():
+            left_children = []
+            right_children = []
+        else:
+            left_children = node.children[:m + 1]
+            right_children = node.children[m + 1:]
+
+        left = treeItem(left_keys, left_children)
+        right = treeItem(right_keys, right_children)
 
         if node is self.root:
-            self.root = treeItem([middle_key], [middle_val])
-            self.root.children = [left_node, right_node]
+            self.root = treeItem([node.keys[m]], [left, right])
         else:
-            parent = node.parent
+            parent = self._find_parent(self.root, node)
             index = parent.children.index(node)
-            parent.keys.insert(index, middle_key)
-            parent.vals.insert(index, middle_val)
-            parent.children[index] = left_node
-            parent.children.insert(index + 1, right_node)
+
+            parent.keys.insert(index, node.keys[m])
+            parent.keys.sort()
+            parent.children[index] = left
+            parent.children.insert(index + 1, right)
+
             if len(parent.keys) > 3:
-                self.split_node(parent)
+                self._split_node(parent)
 
     def save(self):
         """
